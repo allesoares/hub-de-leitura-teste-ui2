@@ -1,0 +1,77 @@
+pipeline {
+    agent any
+    tools { nodejs 'nodejs' }
+
+    options {
+        timeout(time: 15, unit: 'MINUTES')
+        disableConcurrentBuilds()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+    }
+
+    environment {
+        CI = 'true'
+    }
+
+    // O checkout dos testes é feito automaticamente pelo Pipeline from SCM.
+    stages {
+        stage('Clonar aplicação') {
+            steps {
+                // Descarta evidências antigas antes de qualquer instalação.
+                dir('allure-results') { deleteDir() }
+                dir('cypress/screenshots') { deleteDir() }
+                dir('cypress/videos') { deleteDir() }
+                dir('.ci/hub-de-leitura-integrado2') {
+                    deleteDir()
+                    bat 'git clone --depth 1 https://github.com/EBAC-QE/hub-de-leitura-integrado2.git .'
+                }
+            }
+        }
+
+        stage('Instalar dependências da aplicação') {
+            steps {
+                dir('.ci/hub-de-leitura-integrado2') {
+                    bat 'call npm ci --no-audit --no-fund'
+                }
+            }
+        }
+
+        stage('Instalar dependências dos testes') {
+            steps {
+                bat 'call npm ci --no-audit --no-fund'
+                bat 'call npx cypress install'
+                bat 'call npx cypress verify'
+            }
+        }
+
+        stage('Iniciar aplicação e aguardar disponibilidade') {
+            steps {
+                powershell '& ./scripts/start-test-app.ps1'
+            }
+        }
+
+        stage('Executar testes automatizados') {
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'hub-leitura-usuario', usernameVariable: 'CYPRESS_TEST_USER_EMAIL', passwordVariable: 'CYPRESS_TEST_USER_PASSWORD'),
+                    usernamePassword(credentialsId: 'hub-leitura-admin', usernameVariable: 'CYPRESS_TEST_ADMIN_EMAIL', passwordVariable: 'CYPRESS_TEST_ADMIN_PASSWORD')
+                ]) {
+                    bat 'call npm test'
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            archiveArtifacts artifacts: 'cypress/screenshots/**/*.*, cypress/videos/**/*.*', allowEmptyArchive: true
+            allure commandline: 'allure', includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+        }
+        cleanup {
+            script {
+                if (fileExists('scripts/stop-test-app.ps1')) {
+                    powershell '& ./scripts/stop-test-app.ps1'
+                }
+            }
+        }
+    }
+}

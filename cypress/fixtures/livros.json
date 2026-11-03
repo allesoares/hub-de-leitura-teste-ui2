@@ -1,0 +1,32 @@
+[
+    {
+        "livro":  "1984",
+        "categoria":  "Ficção",
+        "autor":  "George Orwell"
+    },
+    {
+        "livro":  "A Arte da Guerra",
+        "categoria":  "Estratégia",
+        "autor":  "Sun Tzu"
+    },
+    {
+        "livro":  "A Divina Comédia",
+        "categoria":  "Poesia",
+        "autor":  "Dante Alighieri"
+    },
+    {
+        "livro":  "A Menina que Roubava Livros",
+        "categoria":  "Ficção",
+        "autor":  "Markus Zusak"
+    },
+    {
+        "livro":  "A Metamorfose",
+        "categoria":  "Ficção",
+        "autor":  "Franz Kafka"
+    },
+    {
+        "livro":  "Orgulho e Preconceito",
+        "categoria":  "Romance",
+        "autor":  "Jane Austen"
+    }
+]

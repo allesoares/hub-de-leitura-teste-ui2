@@ -1,0 +1,56 @@
+# Dependencias e caches
+node_modules/
+.npm/
+.cache/
+CypressCache/
+cy_cache/
+
+# Resultados gerados
+allure-results/
+allure-report/
+coverage/
+.nyc_output/
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/
+reports/
+test-results/
+*.log
+*.tsbuildinfo
+
+# Credenciais e configuracoes locais
+.env
+.env.*
+!.env.example
+cypress.env.json
+cypress.env.*.json
+!cypress.env.example.json
+cypress/fixtures/usuario.json
+.npmrc
+.netrc
+credentials.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+.ssh/
+.aws/
+
+# Jenkins local
+.jenkins/
+.jenkins-local/
+
+# Editor, sistema e temporarios
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.tmp
+*.bak
+*.swp
+
+# Aplicacao isolada para validacao local
+.ci/

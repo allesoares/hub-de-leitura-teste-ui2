@@ -1,0 +1,24 @@
+{
+  "name": "hub-de-leitura-teste-ui2",
+  "version": "1.0.0",
+  "description": "Testes de interface do Hub de Leitura com Cypress e Allure",
+  "scripts": {
+    "test": "npx cypress run --browser chrome",
+    "cy:report": "cypress run --record",
+    "cy:open": "cypress open",
+    "report:generate": "allure generate allure-results --clean --output allure-report",
+    "report:open": "allure open allure-report"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cypress": "^15.18.1"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "allure-commandline": "^2.46.1",
+    "allure-cypress": "^3.14.0"
+  }
+}
