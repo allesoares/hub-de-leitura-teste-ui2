@@ -29,10 +29,11 @@ if (-not $env:JWT_SECRET) {
     $env:JWT_SECRET = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
 }
 
+# O runner grava os logs sem herdar os canais de saída do step do Jenkins.
+$runner = Join-Path $PSScriptRoot 'run-test-app.cjs'
 $appProcess = Start-Process -FilePath (Get-Command node -ErrorAction Stop).Source `
-    -ArgumentList 'src/server.js' -WorkingDirectory $appDirectory -WindowStyle Hidden `
-    -RedirectStandardOutput (Join-Path $runtimeDirectory 'app.out.log') `
-    -RedirectStandardError (Join-Path $runtimeDirectory 'app.err.log') -PassThru
+    -ArgumentList @("`"$runner`"", "`"$appDirectory`"", "`"$runtimeDirectory`"") `
+    -WorkingDirectory $appDirectory -WindowStyle Hidden -PassThru
 
 @{
     Id = $appProcess.Id
