@@ -9,11 +9,11 @@
 - Branch: */main.
 - Script Path: jenkinsfile.
 
-Use Construir agora para executar. O job obtém os testes automaticamente, baixa a aplicação em .ci/hub-de-leitura-integrado2 e executa a suíte no Chrome. A aplicação usa a porta 3000; se já estiver ocupada, o job falha sem encerrar o processo existente.
+Use Construir agora para executar. O pipeline clona a aplicação em hub-de-leitura-integrado2 e os testes em hub-de-leitura-teste-ui2 dentro do workspace, instala as dependências e executa a suíte no Chrome. A aplicação usa a porta 3000, que deve estar livre antes do build. A inicialização usa start /B, com uma espera fixa de 10 segundos antes das próximas etapas.
 
 ## Ferramentas
 
-O agente precisa ser Windows e ter Git, Chrome, PowerShell e Java no PATH. Em Gerenciar Jenkins → Ferramentas, configure NodeJS com nome nodejs e Allure com nome allure. A instalação local usa as ferramentas já disponíveis na máquina.
+Os dois pipelines usam comandos Windows (bat). O agente precisa ter Git, Chrome e Java no PATH. Em Gerenciar Jenkins → Ferramentas, configure NodeJS com nome nodejs e Allure com nome allure. A instalação local usa as ferramentas já disponíveis na máquina.
 
 ## Credenciais da aplicação
 
@@ -30,7 +30,7 @@ O repositório é público; não é necessário cadastrar credencial do GitHub p
 
 ## Resultado e evidências
 
-Abra a execução para consultar Console Output, os artefatos de screenshots e vídeos e o relatório Allure. O pipeline mantém os últimos 10 builds, tem limite de 15 minutos e impede execuções simultâneas do mesmo job. O encerramento da aplicação ocorre em post cleanup por PID e horário de início.
+Abra a execução para consultar Console Output, os artefatos de screenshots e vídeos e o relatório Allure. Os resultados são coletados na pasta hub-de-leitura-teste-ui2 do workspace. O pipeline mantém os últimos 10 builds, tem limite de 15 minutos e impede execuções simultâneas do mesmo job. Em post cleanup, taskkill /F /IM node.exe /T encerra todos os processos Node acessíveis ao usuário do Jenkins e seus processos filhos, incluindo outros projetos que estejam em execução.
 
 ## Acesso à instalação local
 

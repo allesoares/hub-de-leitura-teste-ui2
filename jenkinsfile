@@ -8,54 +8,66 @@ pipeline {
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
 
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
+
     environment {
         CI = 'true'
     }
 
-    // O checkout dos testes é feito automaticamente pelo Pipeline from SCM.
     stages {
-        stage('Clonar aplicação') {
+        stage('Clonar o Hub de Leitura integrado') {
             steps {
-                // Descarta evidências antigas antes de qualquer instalação.
-                dir('allure-results') { deleteDir() }
-                dir('cypress/screenshots') { deleteDir() }
-                dir('cypress/videos') { deleteDir() }
-                dir('.ci/hub-de-leitura-integrado2') {
-                    deleteDir()
-                    bat 'git clone --depth 1 https://github.com/EBAC-QE/hub-de-leitura-integrado2.git .'
+                bat '''
+                    if exist hub-de-leitura-integrado2 rmdir /s /q hub-de-leitura-integrado2
+                    git clone https://github.com/EBAC-QE/hub-de-leitura-integrado2.git
+                '''
+            }
+        }
+
+        stage('Instalar dependências e iniciar aplicação') {
+            steps {
+                dir('hub-de-leitura-integrado2') {
+                    bat 'call npm install'
+                    bat '''
+                        set NODE_ENV=production
+                        set PORT=3000
+                        set JENKINS_NODE_COOKIE=hub-leitura-%BUILD_NUMBER%
+                        start "" /B npm.cmd start <NUL >app.out.log 2>app.err.log
+                    '''
+                }
+                sleep time: 10, unit: 'SECONDS'
+            }
+        }
+
+        stage('Clonar o projeto de testes') {
+            steps {
+                // Remove evidências antigas mesmo se o clone falhar.
+                dir('hub-de-leitura-teste-ui2') { deleteDir() }
+                bat 'git clone --branch main https://github.com/allesoares/hub-de-leitura-teste-ui2.git'
+            }
+        }
+
+        stage('Instalar dependências do projeto de testes') {
+            steps {
+                dir('hub-de-leitura-teste-ui2') {
+                    bat 'call npm install'
+                    bat 'call npx cypress install'
+                    bat 'call npx cypress verify'
                 }
             }
         }
 
-        stage('Instalar dependências da aplicação') {
+        stage('Executar os testes automatizados') {
             steps {
-                dir('.ci/hub-de-leitura-integrado2') {
-                    bat 'call npm ci --no-audit --no-fund'
-                }
-            }
-        }
-
-        stage('Instalar dependências dos testes') {
-            steps {
-                bat 'call npm ci --no-audit --no-fund'
-                bat 'call npx cypress install'
-                bat 'call npx cypress verify'
-            }
-        }
-
-        stage('Iniciar aplicação e aguardar disponibilidade') {
-            steps {
-                powershell '& ./scripts/start-test-app.ps1'
-            }
-        }
-
-        stage('Executar testes automatizados') {
-            steps {
-                withCredentials([
-                    usernamePassword(credentialsId: 'hub-leitura-usuario', usernameVariable: 'CYPRESS_TEST_USER_EMAIL', passwordVariable: 'CYPRESS_TEST_USER_PASSWORD'),
-                    usernamePassword(credentialsId: 'hub-leitura-admin', usernameVariable: 'CYPRESS_TEST_ADMIN_EMAIL', passwordVariable: 'CYPRESS_TEST_ADMIN_PASSWORD')
-                ]) {
-                    bat 'call npm test'
+                dir('hub-de-leitura-teste-ui2') {
+                    withCredentials([
+                        usernamePassword(credentialsId: 'hub-leitura-usuario', usernameVariable: 'CYPRESS_TEST_USER_EMAIL', passwordVariable: 'CYPRESS_TEST_USER_PASSWORD'),
+                        usernamePassword(credentialsId: 'hub-leitura-admin', usernameVariable: 'CYPRESS_TEST_ADMIN_EMAIL', passwordVariable: 'CYPRESS_TEST_ADMIN_PASSWORD')
+                    ]) {
+                        bat 'call npm test'
+                    }
                 }
             }
         }
@@ -63,15 +75,13 @@ pipeline {
 
     post {
         always {
-            archiveArtifacts artifacts: 'cypress/screenshots/**/*.*, cypress/videos/**/*.*', allowEmptyArchive: true
-            allure commandline: 'allure', includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+            dir('hub-de-leitura-teste-ui2') {
+                archiveArtifacts artifacts: 'cypress/screenshots/**/*.*, cypress/videos/**/*.*', allowEmptyArchive: true
+                allure commandline: 'allure', includeProperties: false, jdk: '', results: [[path: 'allure-results']]
+            }
         }
         cleanup {
-            script {
-                if (fileExists('scripts/stop-test-app.ps1')) {
-                    powershell '& ./scripts/stop-test-app.ps1'
-                }
-            }
+            bat 'taskkill /F /IM node.exe /T || exit 0'
         }
     }
 }
